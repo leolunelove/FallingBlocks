@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { Leaderboard, SubmitScore } from "./Leaderboard";
+import { LogoMark } from "./LogoMark";
 import { memo, useEffect, useRef, useState } from "react";
 import type { Controller } from "@/lib/game/controller";
 import { DEFAULT_SETTINGS, ACTION_LABELS, HANDLING_PRESETS, codesLabel, saveSettings } from "@/lib/game/settings";
@@ -75,12 +76,7 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
       {(phase === "ready" || readyVisible) && overlay === null ? (
         <div className={`ready-hint opening-screen${phase !== "ready" ? " is-leaving" : ""}`} aria-hidden={phase !== "ready"} inert={phase !== "ready"}>
           <div className="opening-brand">
-            <svg className="opening-tiles" viewBox="0 0 80 80" aria-hidden="true">
-              <rect className="opening-tile tile-a" x="8" y="8" width="28" height="28" rx="6" />
-              <rect className="opening-tile tile-b" x="44" y="8" width="28" height="28" rx="6" />
-              <rect className="opening-tile tile-c" x="8" y="44" width="28" height="28" rx="6" />
-              <rect className="opening-tile tile-d" x="44" y="44" width="28" height="28" rx="6" />
-            </svg>
+            <LogoMark className="opening-mark" animated />
             <h2 className="opening-title">FallingBlocks<span>.</span></h2>
           </div>
           <p className="opening-description">{mode === "sprint" ? "Clear 40 lines against the clock." : "Stack blocks. Clear full lines."}</p>
@@ -220,7 +216,7 @@ export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Con
 });
 
 const UPDATE_LOG = [
-  { date: "2026-10-17", label: "October 17, 2026", title: "A smoother way in", changes: ["A new animated opening flows straight into the game, with no waiting to play.", "Cleaner Fixel typography and a simpler welcome screen.", "Opening animations respect your reduced-motion preference.", "Lighter font assets and fewer redraws, with background rendering suspended when the tab is hidden."] },
+  { date: "2026-10-17", label: "October 17, 2026", title: "A smoother way in", changes: ["Our new mint falling-block mark now appears in the header, opening, and browser tab.", "A new animated opening flows straight into the game, with no waiting to play.", "Cleaner Fixel typography and a simpler welcome screen.", "Opening animations respect your reduced-motion preference.", "Lighter font assets and fewer redraws, with background rendering suspended when the tab is hidden."] },
   { date: "2026-10-15", label: "October 15, 2026", title: "A fresh start as FallingBlocks", changes: ["Refreshed FallingBlocks branding, modern typography, and calmer navigation.", "A cleaner results screen, with your score up front and a clear way to play again.", "Finished runs post automatically when your player name is remembered.", "Our new home: fallingblocks.vip."] },
   { date: "2026-10-08", label: "October 8, 2026", title: "More ways to chase a best", changes: ["Worldwide top 10 for Endless scores and 40-line Sprint times.", "Personal bests and recent runs saved on your device.", "Touch controls for mobile, plus clearer line-clear feedback."] },
 ];
