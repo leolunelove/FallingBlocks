@@ -17,7 +17,7 @@ export const MiniPiece = memo(function MiniPiece({
   if (!id) {
     return <div className="mini-piece mini-piece-empty" aria-hidden />;
   }
-  const { fill, shadow } = paletteColors(palette);
+  const { fill } = paletteColors(palette);
   const b = pieceBounds(id);
   const cells = cellsAt(id, 0, 0, 0);
   const w = b.w * size;
@@ -34,18 +34,16 @@ export const MiniPiece = memo(function MiniPiece({
       {cells.map((c, i) => {
         const x = (c.x - b.ox) * size;
         const y = (c.y - b.oy) * size;
-        const g = Math.max(1, size * 0.08);
+        const gap = Math.max(0.75, size * 0.04);
         return (
-          <g key={i}>
-            <rect x={x} y={y} width={size} height={size} fill={shadow[id]} />
-            <rect
-              x={x}
-              y={y}
-              width={size - g}
-              height={size - g}
-              fill={fill[id]}
-            />
-          </g>
+          <rect
+            key={i}
+            x={x + gap / 2}
+            y={y + gap / 2}
+            width={size - gap}
+            height={size - gap}
+            fill={fill[id]}
+          />
         );
       })}
     </svg>
