@@ -49,12 +49,11 @@ export class Renderer {
     x: number,
     y: number,
     color: string,
-    shadow: string,
     opts: { ghost?: boolean; flash?: number; alpha?: number; squash?: number },
   ) {
     const ctx = this.ctx;
     const s = this.cell;
-    const gap = Math.max(1.25, s * 0.06);
+    const gap = Math.max(1, s * 0.04);
     let px = x * s + gap / 2;
     let py = y * s + gap / 2;
     const pw = s - gap;
@@ -79,24 +78,8 @@ export class Renderer {
       return;
     }
 
-    ctx.fillStyle = shadow;
+    ctx.fillStyle = opts.flash ? mix(color, "#f2eee8", opts.flash) : color;
     ctx.fillRect(px, py, pw, ph);
-
-    const face = opts.flash ? mix(color, "#f2eee8", opts.flash) : color;
-    ctx.fillStyle = face;
-    const inset = Math.max(0.8, s * 0.04);
-    ctx.fillRect(px, py, pw - inset, ph - inset);
-
-    const g = ctx.createLinearGradient(px, py, px, py + ph);
-    g.addColorStop(0, "rgba(255,255,255,0.14)");
-    g.addColorStop(0.45, "rgba(255,255,255,0.02)");
-    g.addColorStop(1, "rgba(0,0,0,0.18)");
-    ctx.fillStyle = g;
-    ctx.fillRect(px, py, pw - inset, ph - inset);
-
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.fillRect(px, py, pw - inset, Math.max(1, s * 0.045));
-    ctx.fillRect(px, py, Math.max(1, s * 0.045), ph - inset);
 
     ctx.restore();
   }
@@ -139,7 +122,7 @@ export class Renderer {
       ctx.stroke();
     }
 
-    const { fill, shadow } = paletteColors(settings.palette ?? "standard");
+    const { fill } = paletteColors(settings.palette ?? "standard");
     const death = new Set((snap.deathCells ?? []).map((c) => `${c.x},${c.y}`));
     const flashMap = new Map<string, number>();
     if (snap.landFlash) {
@@ -162,7 +145,7 @@ export class Renderer {
           flash = Math.max(flash, t < 0.55 ? 0.85 : 0.2);
         }
         const color = clearing ? mix(fill[cell.id], "#f2eee8", Math.min(1, flash + 0.4)) : fill[cell.id];
-        this.drawCell(x, visY, color, shadow[cell.id], {
+        this.drawCell(x, visY, color, {
           flash: death.has(`${x},${y}`) ? Math.max(flash, 0.55) : flash,
           alpha: clearing ? 0.35 + snap.clearT * 0.65 : 1,
           squash: flashMap.has(`${x},${y}`) && !settings.reducedMotion ? juice.squash : 1,
@@ -195,7 +178,7 @@ export class Renderer {
         const gcells = cellsAt(p.id, p.x, snap.ghostY, p.rot);
         for (const c of gcells) {
           if (c.y < HIDDEN_ROWS) continue;
-          this.drawCell(c.x, c.y - HIDDEN_ROWS, mix(fill[p.id], "#deddfb", 0.3), shadow[p.id], {
+          this.drawCell(c.x, c.y - HIDDEN_ROWS, mix(fill[p.id], "#deddfb", 0.3), {
             ghost: true,
             alpha: Math.min(1, ghostOpacity * 1.9),
           });
@@ -205,7 +188,7 @@ export class Renderer {
       const squash = juice.squash;
       for (const c of cells) {
         if (c.y < HIDDEN_ROWS) continue;
-        this.drawCell(c.x, c.y - HIDDEN_ROWS, fill[p.id], shadow[p.id], {
+        this.drawCell(c.x, c.y - HIDDEN_ROWS, fill[p.id], {
           squash,
           flash: juice.impact * 0.35,
         });
