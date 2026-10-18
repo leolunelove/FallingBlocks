@@ -381,25 +381,25 @@ export function cellsAt(id: PieceId, x: number, y: number, rot: number): Point[]
   return shape.map((p) => ({ x: x + p.x, y: y + p.y }));
 }
 
-/** Tightly controlled, slightly earthy saturations — physical, not neon. */
+/** Soft, distinct pastels on the midnight-blue well. */
 export const PIECE_COLORS: Record<PieceId, string> = {
-  I: "#2FBFB8",
-  O: "#C9A227",
-  T: "#8B6BAD",
-  S: "#4FA06A",
-  Z: "#C05656",
-  J: "#3D74C2",
-  L: "#C87438",
+  I: "#8EC7D2",
+  O: "#E8C879",
+  T: "#BC9BDF",
+  S: "#9FC9AC",
+  Z: "#D88FA3",
+  J: "#91ADE7",
+  L: "#E4AF96",
 };
 
 export const PIECE_SHADOW: Record<PieceId, string> = {
-  I: "#1A8A85",
-  O: "#8F7310",
-  T: "#634A80",
-  S: "#34754B",
-  Z: "#8A3535",
-  J: "#28538F",
-  L: "#94531F",
+  I: "#497D89",
+  O: "#90763D",
+  T: "#72518E",
+  S: "#56785F",
+  Z: "#864B60",
+  J: "#516EA6",
+  L: "#93694F",
 };
 
 /** High-separation set. S/Z and J/L no longer sit next to each other. */

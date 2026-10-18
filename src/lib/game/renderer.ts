@@ -82,7 +82,7 @@ export class Renderer {
     ctx.fillStyle = shadow;
     ctx.fillRect(px, py, pw, ph);
 
-    const face = opts.flash ? mix(color, "#f4f4f0", opts.flash) : color;
+    const face = opts.flash ? mix(color, "#f2eee8", opts.flash) : color;
     ctx.fillStyle = face;
     const inset = Math.max(0.8, s * 0.04);
     ctx.fillRect(px, py, pw - inset, ph - inset);
@@ -110,7 +110,7 @@ export class Renderer {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    ctx.fillStyle = "#101012";
+    ctx.fillStyle = "#181c29";
     ctx.fillRect(0, 0, w, h);
 
     // Recessed well vignette
@@ -126,7 +126,7 @@ export class Renderer {
 
     if (settings.gridVisible) {
       ctx.beginPath();
-      ctx.strokeStyle = "rgba(236,236,232,0.045)";
+      ctx.strokeStyle = "rgba(185,184,245,0.045)";
       ctx.lineWidth = 1;
       for (let x = 1; x < COLS; x++) {
         ctx.moveTo(x * s + 0.5, 0);
@@ -161,7 +161,7 @@ export class Renderer {
           const t = 1 - snap.clearT;
           flash = Math.max(flash, t < 0.55 ? 0.85 : 0.2);
         }
-        const color = clearing ? mix(fill[cell.id], "#f7f7f2", Math.min(1, flash + 0.4)) : fill[cell.id];
+        const color = clearing ? mix(fill[cell.id], "#f2eee8", Math.min(1, flash + 0.4)) : fill[cell.id];
         this.drawCell(x, visY, color, shadow[cell.id], {
           flash: death.has(`${x},${y}`) ? Math.max(flash, 0.55) : flash,
           alpha: clearing ? 0.35 + snap.clearT * 0.65 : 1,
@@ -171,13 +171,13 @@ export class Renderer {
     }
 
     if (snap.clearing.length && !settings.reducedMotion) {
-      ctx.fillStyle = `rgba(220,255,245,${snap.clearT * 0.3})`;
+      ctx.fillStyle = `rgba(185,184,245,${snap.clearT * 0.3})`;
       for (const y of snap.clearing) ctx.fillRect(0, (y - HIDDEN_ROWS) * s, w, s);
     }
 
     if (snap.phase === "over" && death.size) {
       ctx.save();
-      ctx.strokeStyle = "rgba(247,247,242,0.85)";
+      ctx.strokeStyle = "rgba(242,238,232,0.85)";
       ctx.lineWidth = Math.max(1.5, s * 0.06);
       for (const key of death) {
         const [x, y] = key.split(",").map(Number);
@@ -195,7 +195,7 @@ export class Renderer {
         const gcells = cellsAt(p.id, p.x, snap.ghostY, p.rot);
         for (const c of gcells) {
           if (c.y < HIDDEN_ROWS) continue;
-          this.drawCell(c.x, c.y - HIDDEN_ROWS, mix(fill[p.id], "#eaf9f2", 0.3), shadow[p.id], {
+          this.drawCell(c.x, c.y - HIDDEN_ROWS, mix(fill[p.id], "#deddfb", 0.3), shadow[p.id], {
             ghost: true,
             alpha: Math.min(1, ghostOpacity * 1.9),
           });
@@ -213,14 +213,14 @@ export class Renderer {
     }
 
     if (juice.flash > 0) {
-      ctx.fillStyle = `rgba(247,247,242,${juice.flash * 0.07})`;
+      ctx.fillStyle = `rgba(242,238,232,${juice.flash * 0.07})`;
       ctx.fillRect(-8, -8, w + 16, h + 16);
     }
 
     ctx.restore();
 
     // Inner rim
-    ctx.strokeStyle = "rgba(236,236,232,0.06)";
+    ctx.strokeStyle = "rgba(185,184,245,0.06)";
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
   }
