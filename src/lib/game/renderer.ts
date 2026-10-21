@@ -136,26 +136,18 @@ export class Renderer {
       if (!row) continue;
       const visY = y - HIDDEN_ROWS;
       const clearing = snap.clearing.includes(y);
+      const progress = Math.max(0, Math.min(1, 1 - snap.clearT));
+      const clearFade = progress * progress * (3 - 2 * progress);
       for (let x = 0; x < COLS; x++) {
         const cell = row[x];
         if (!cell) continue;
         let flash = flashMap.get(`${x},${y}`) ?? 0;
-        if (clearing) {
-          const t = 1 - snap.clearT;
-          flash = Math.max(flash, t < 0.55 ? 0.85 : 0.2);
-        }
-        const color = clearing ? mix(fill[cell.id], "#f2eee8", Math.min(1, flash + 0.4)) : fill[cell.id];
-        this.drawCell(x, visY, color, {
-          flash: death.has(`${x},${y}`) ? Math.max(flash, 0.55) : flash,
-          alpha: clearing ? 0.35 + snap.clearT * 0.65 : 1,
-          squash: flashMap.has(`${x},${y}`) && !settings.reducedMotion ? juice.squash : 1,
+        this.drawCell(x, visY, fill[cell.id], {
+          flash: clearing ? 0 : death.has(`${x},${y}`) ? Math.max(flash, 0.55) : flash,
+          alpha: clearing ? 1 - clearFade : 1,
+          squash: !clearing && flashMap.has(`${x},${y}`) && !settings.reducedMotion ? juice.squash : 1,
         });
       }
-    }
-
-    if (snap.clearing.length && !settings.reducedMotion) {
-      ctx.fillStyle = `rgba(185,184,245,${snap.clearT * 0.3})`;
-      for (const y of snap.clearing) ctx.fillRect(0, (y - HIDDEN_ROWS) * s, w, s);
     }
 
     if (snap.phase === "over" && death.size) {

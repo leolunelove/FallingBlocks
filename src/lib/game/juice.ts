@@ -25,6 +25,8 @@ export class Juice {
   }
 
   hit(kind: "lock" | "hard" | "clear" | "tetris") {
+    // Cleared rows provide their own quiet fade; avoid a second board-wide effect.
+    if (kind === "clear" || kind === "tetris") return;
     if (this.reduced) {
       this.flash = Math.max(this.flash, 0.15);
       return;
@@ -36,12 +38,6 @@ export class Juice {
       this.impact = 1;
       this.squash = 0.9;
       this.addTrauma(0.18);
-    } else if (kind === "clear") {
-      this.flash = 0.35;
-      this.addTrauma(0.12);
-    } else {
-      this.flash = 0.55;
-      this.addTrauma(0.42);
     }
   }
 
