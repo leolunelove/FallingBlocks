@@ -67,10 +67,23 @@ try {
   assert.equal(ctrl.engine.timeMs, hiddenTime, 'Returning must not advance the paused clock');
   ctrl.resume(); advance();
   assert.ok(ctrl.engine.timeMs > pausedTime);
+  // Clear feedback follows the top cleared row, including multi-line clears.
+  for (const rows of [1, 4]) {
+    ctrl.restart();
+    for (let y = 40 - rows; y < 40; y++) {
+      ctrl.engine.grid[y] = Array.from({ length: 10 }, (_, x) => x === 4 ? null : { id: 'T', lockedAt: 0 });
+    }
+    ctrl.engine.active = { id: 'I', x: 2, y: 20, rot: 1, lastKick: 0 };
+    ctrl.engine.hardDrop();
+    assert.equal(useTris.getState().clearFeedbackTop, rows === 1 ? 95 : 82.5);
+    assert.match(useTris.getState().lastClearLabel, / · \+\d+$/);
+    advance(60);
+    assert.equal(useTris.getState().lastClearLabel, null, 'Score label expires without waiting for another input');
+  }
   ctrl.quit(); advance(60);
   const quitPaints = paints; advance(120);
   assert.equal(paints, quitPaints, 'Quit must return to an idle board');
   ctrl.destroy(); assert.equal(frames.size, 0);
   assert.equal(windowEvents.size + documentEvents.size, 0);
-  console.log('Passed: idle/paused rendering, live settings, stable previews, hidden-tab suspension, resume, quit and cleanup.');
+  console.log('Passed: rendering lifecycle, stable previews, hidden-tab recovery, row-based score feedback and cleanup.');
 } finally { rmSync(out, { recursive: true, force: true }); }
