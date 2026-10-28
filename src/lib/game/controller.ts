@@ -4,7 +4,7 @@ import { Input } from "./input";
 import { Juice } from "./juice";
 import { applyRun, appendHistory, loadRecords } from "./records";
 import { Renderer } from "./renderer";
-import { COLS, VISIBLE_ROWS } from "./types";
+import { COLS, HIDDEN_ROWS, VISIBLE_ROWS } from "./types";
 import { clearLabel, useTris } from "./store";
 import type { Settings } from "./types";
 
@@ -103,8 +103,13 @@ export function createController(opts: {
       audio.lineClear(e.event.lines, difficult);
       if (e.event.combo >= 1) audio.combo(e.event.combo);
       const label = clearLabel(e.event.kind, e.event.b2b, e.event.combo);
-      useTris.getState().patch({ lastClearLabel: `${label} +${e.event.scoreGain}`, clearSerial: useTris.getState().clearSerial + 1 });
-      labelTimer = 1.1;
+      const row = Math.min(...engine.clearing) - HIDDEN_ROWS;
+      useTris.getState().patch({
+        lastClearLabel: `${label ? `${label} · ` : ""}+${e.event.scoreGain}`,
+        clearFeedbackTop: Math.max(8, Math.min(95, (row + 0.5) / VISIBLE_ROWS * 100)),
+        clearSerial: useTris.getState().clearSerial + 1,
+      });
+      labelTimer = 0.9;
       if (engine.mode === "endless" && engine.score > lastBestScore && lastBestScore > 0) {
         const rec = useTris.getState().records;
         if (engine.score > rec.highScore) {

@@ -27,6 +27,7 @@ export type HudState = {
   combo: number;
   b2b: boolean;
   lastClearLabel: string | null;
+  clearFeedbackTop: number;
   levelToast: number | null;
   newBest: boolean;
   records: Records;
@@ -71,6 +72,7 @@ export const useTris = create<HudState & Actions>((set, get) => ({
   combo: -1,
   b2b: false,
   lastClearLabel: null,
+  clearFeedbackTop: 95,
   levelToast: null,
   newBest: false,
   records: bootRecords,
