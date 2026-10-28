@@ -48,6 +48,7 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
   const newBest = useTris((s) => s.newBest);
   const records = useTris((s) => s.records);
   const lastClearLabel = useTris((s) => s.lastClearLabel);
+  const clearFeedbackTop = useTris((s) => s.clearFeedbackTop);
   const levelToast = useTris((s) => s.levelToast);
   const pieces = useTris((s) => s.pieces);
   const bestCrossMs = useTris((s) => s.bestCrossMs);
@@ -63,7 +64,7 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
   return (
     <>
       {lastClearLabel && phase === "playing" ? (
-        <div key={clearSerial} className="float-tag float-clear" role="status">
+        <div key={clearSerial} className="clear-feedback" style={{ top: `${clearFeedbackTop}%` }} role="status" aria-atomic="true">
           {lastClearLabel}
         </div>
       ) : null}
@@ -216,6 +217,7 @@ export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Con
 });
 
 const UPDATE_LOG = [
+  { date: "2026-10-28", label: "October 28, 2026", title: "Clearer controls, quieter scores", changes: ["Touch controls now separate movement from rotation, with clearer labels and a distinct Drop button.", "Line-clear points appear beside the cleared rows instead of across the middle of the board, on desktop and mobile.", "Touch releases are handled more reliably, including interrupted presses. Desktop keyboard controls and handling stay the same."] },
   { date: "2026-10-22", label: "October 22, 2026", title: "A cleaner clear", changes: ["Completed lines now fade away smoothly in their own colours, without a white flash or extra screen shake.", "The quick line-clear timing, controls, and reduced-motion support stay the same."] },
   { date: "2026-10-19", label: "October 19, 2026", title: "A new shade of FallingBlocks", changes: ["Midnight-blue surfaces, soft lavender accents, and warm ivory text across the game and menus.", "A softer block palette with peach, lavender, sky blue, sage, and gold tones.", "Flat, clean blocks on the board and in Hold and Next, with bevels and shine removed.", "The logo, browser icon, and social sharing preview now match the new colours."] },
   { date: "2026-10-17", label: "October 17, 2026", title: "A smoother way in", changes: ["New FallingBlocks logo: a mint falling block above a landing line, now in the header, opening, and favicon.", "The opening logo drops into a gentle bounce above the line. Play starts immediately, even during the animation.", "Cleaner Fixel typography and a simpler welcome screen.", "Opening animations respect your reduced-motion preference.", "Lighter font assets and fewer redraws, with background rendering suspended when the tab is hidden."] },
@@ -547,45 +549,56 @@ function Toggle({ label, on, onChange }: { label: string; on: boolean; onChange:
 export function TouchBar({ ctrl }: { ctrl: Controller | null }) {
   const phase = useTris((s) => s.phase);
   const overlay = useTris((s) => s.overlay);
+  const heldPointers = useRef(new Map<number, string>());
+  useEffect(() => {
+    const held = heldPointers.current;
+    return () => {
+      for (const code of held.values()) ctrl?.input.onKeyUp(code);
+      held.clear();
+    };
+  }, [ctrl, phase, overlay]);
+
   if (phase === "ready" || phase === "over") return null;
-  const down = (action: Action) => (e: React.PointerEvent) => {
+  const down = (action: Action) => (e: React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (phase !== "playing" || overlay) return;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    const code = ctrl?.input.settings.bindings[action][0];
-    if (code) ctrl?.input.onKeyDown(code);
+    if (phase !== "playing" || overlay || !ctrl) return;
+    const code = ctrl.input.settings.bindings[action][0];
+    if (!code) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const alreadyHeld = [...heldPointers.current.values()].includes(code);
+    heldPointers.current.set(e.pointerId, code);
+    if (!alreadyHeld) ctrl.input.onKeyDown(code);
   };
-  const up = (action: Action) => (e: React.PointerEvent) => {
-    e.preventDefault();
-    const code = ctrl?.input.settings.bindings[action][0];
-    if (code) ctrl?.input.onKeyUp(code);
+  const up = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const code = heldPointers.current.get(e.pointerId);
+    heldPointers.current.delete(e.pointerId);
+    if (code && ![...heldPointers.current.values()].includes(code)) ctrl?.input.onKeyUp(code);
   };
+  const activate = (action: Action) => (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Pointer presses are handled above; preserve keyboard/screen-reader activation.
+    if (e.detail !== 0 || phase !== "playing" || overlay || !ctrl) return;
+    const code = ctrl.input.settings.bindings[action][0];
+    if (code) { ctrl.input.onKeyDown(code); ctrl.input.onKeyUp(code); }
+  };
+  const controls: { action: Action; symbol: string; label: string; name: string }[] = [
+    { action: "left", symbol: "←", label: "Left", name: "Move left" },
+    { action: "soft", symbol: "↓", label: "Soft drop", name: "Soft drop" },
+    { action: "right", symbol: "→", label: "Right", name: "Move right" },
+    { action: "hold", symbol: "⇄", label: "Hold", name: "Hold piece" },
+    { action: "rotCCW", symbol: "↶", label: "Rotate", name: "Rotate counterclockwise" },
+    { action: "rotCW", symbol: "↷", label: "Rotate", name: "Rotate clockwise" },
+    { action: "rot180", symbol: "180°", label: "Turn", name: "Rotate 180 degrees" },
+    { action: "hard", symbol: "⇣", label: "Drop", name: "Hard drop" },
+  ];
   return (
-    <fieldset disabled={phase !== "playing" || !!overlay} className="touch-bar" aria-label="Touch controls" onContextMenu={(e) => e.preventDefault()}>
-      <button type="button" className="touch-btn" onPointerDown={down("hold")} onPointerUp={up("hold")} onPointerCancel={up("hold")}>
-        HOLD
-      </button>
-      <button type="button" className="touch-btn" aria-label="Move left" onPointerDown={down("left")} onPointerUp={up("left")} onPointerCancel={up("left")}>
-        ←
-      </button>
-      <button type="button" className="touch-btn" aria-label="Move right" onPointerDown={down("right")} onPointerUp={up("right")} onPointerCancel={up("right")}>
-        →
-      </button>
-      <button type="button" className="touch-btn" aria-label="Rotate 180 degrees" onPointerDown={down("rot180")} onPointerUp={up("rot180")} onPointerCancel={up("rot180")}>
-        180
-      </button>
-      <button type="button" className="touch-btn" aria-label="Rotate counterclockwise" onPointerDown={down("rotCCW")} onPointerUp={up("rotCCW")} onPointerCancel={up("rotCCW")}>
-        CCW
-      </button>
-      <button type="button" className="touch-btn" aria-label="Rotate clockwise" onPointerDown={down("rotCW")} onPointerUp={up("rotCW")} onPointerCancel={up("rotCW")}>
-        CW
-      </button>
-      <button type="button" className="touch-btn" aria-label="Soft drop" onPointerDown={down("soft")} onPointerUp={up("soft")} onPointerCancel={up("soft")}>
-        ↓
-      </button>
-      <button type="button" className="touch-btn hard" onPointerDown={down("hard")} onPointerUp={up("hard")} onPointerCancel={up("hard")}>
-        DROP
-      </button>
+    <fieldset disabled={phase !== "playing" || !!overlay} className="touch-bar" aria-label="Touch controls" onContextMenu={e => e.preventDefault()}>
+      {controls.map(({ action, symbol, label, name }) => (
+        <button key={action} type="button" className={`touch-btn touch-${action}`} aria-label={name}
+          onPointerDown={down(action)} onPointerUp={up} onPointerCancel={up} onLostPointerCapture={up} onClick={activate(action)}>
+          <span className="touch-symbol" aria-hidden="true">{symbol}</span>
+          <span className="touch-label" aria-hidden="true">{label}</span>
+        </button>
+      ))}
     </fieldset>
   );
 }
