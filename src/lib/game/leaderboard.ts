@@ -1,3 +1,4 @@
+import { nicknameError } from "./nickname";
 import { LEADERBOARD_URL, LEADERBOARD_KEY } from "./leaderboard-config";
 import type { GameMode, RunRecord } from "./types";
 
@@ -23,13 +24,13 @@ let memoryNickname = "";
 export function savedNickname(): string {
   try {
     const saved = localStorage.getItem("3tris-nickname-v1")?.trim() ?? "";
-    if (/^[A-Za-z0-9 _-]{2,16}$/.test(saved)) memoryNickname = saved;
+    memoryNickname = nicknameError(saved) ? "" : saved;
   } catch { /* use this session's name when storage is unavailable */ }
   return memoryNickname;
 }
 export function rememberNickname(nickname: string): void {
   const name = nickname.trim();
-  if (!/^[A-Za-z0-9 _-]{2,16}$/.test(name)) return;
+  if (nicknameError(name)) return;
   memoryNickname = name;
   try { localStorage.setItem("3tris-nickname-v1", name); } catch { /* session only */ }
 }
@@ -52,6 +53,8 @@ export function beginLeaderboardRun(runId: string, mode: GameMode) {
   return request<{ ok: boolean }>("", { action: "start", runId, mode, playerToken: playerToken() });
 }
 export async function postLeaderboardRun(runId: string, run: RunRecord, nickname: string) {
+  const error = nicknameError(nickname);
+  if (error) throw new Error(error);
   rememberNickname(nickname);
   const result = await request<{ rank: number | null; improved: boolean }>("", {
     action: "submit", runId, playerToken: playerToken(), nickname: nickname.trim(),
