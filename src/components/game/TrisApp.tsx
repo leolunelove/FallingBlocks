@@ -41,6 +41,7 @@ export function TrisApp() {
   return (
     <div className={`tris-root${settings.reducedMotion ? " motion-reduced" : ""}`}>
       <PrefersReducedSync />
+      <TitleIntro />
       <div className="bezel" />
       <header className="tris-top">
         <h1 className="wordmark" aria-label="FallingBlocks">
@@ -172,4 +173,30 @@ function ClockAndPace() {
 function MobileClock() {
   const time = useTris(s => formatTime(s.timeMs));
   return <p className="stat-num">{time}</p>;
+}
+
+// Cosmetic only: the controller and menu mount immediately underneath.
+function TitleIntro() {
+  const [visible, setVisible] = useState(true);
+  const phase = useTris(s => s.phase);
+  const reducedMotion = useTris(s => s.settings.reducedMotion);
+  useEffect(() => {
+    if (reducedMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setVisible(false); return; }
+    const dismiss = () => setVisible(false);
+    const timeout = window.setTimeout(dismiss, 720);
+    window.addEventListener("keydown", dismiss, { once: true });
+    window.addEventListener("pointerdown", dismiss, { once: true });
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("keydown", dismiss);
+      window.removeEventListener("pointerdown", dismiss);
+    };
+  }, [reducedMotion]);
+  if (!visible || phase !== "ready") return null;
+  return <div className="title-intro" aria-hidden="true">
+    <div className="title-intro-brand">
+      <LogoMark className="title-intro-mark" />
+      <span className="title-intro-name">FallingBlocks<span>.</span></span>
+    </div>
+  </div>;
 }
