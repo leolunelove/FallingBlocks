@@ -1,3 +1,4 @@
+import { nicknameError } from "@/lib/game/nickname";
 import { useEffect, useRef, useState } from "react";
 import { getLeaderboard, rememberNickname, savedNickname, type LeaderboardEntry } from "@/lib/game/leaderboard";
 import { formatScore, formatSprintTime, useTris } from "@/lib/game/store";
@@ -65,8 +66,8 @@ export function SubmitScore() {
     }}>
       {editingName ? <>
         <label htmlFor="leaderboard-name">Your leaderboard name</label>
-        <input id="leaderboard-name" value={nickname} onChange={e => { setNickname(e.target.value); rememberNickname(e.target.value); }} minLength={2} maxLength={16} pattern={"[A-Za-z0-9 _\\-]{2,16}"} title="2–16 letters, numbers, spaces, underscores or hyphens" placeholder="Player name" autoComplete="nickname" required disabled={status === "sending"} />
-        <p className="submission-message">Your name is remembered here. Future runs post automatically.</p>
+        <input id="leaderboard-name" value={nickname} onChange={e => { setNickname(e.target.value); rememberNickname(e.target.value); e.currentTarget.setCustomValidity(nicknameError(e.target.value) ?? ""); }} minLength={2} maxLength={16} pattern={"[A-Za-z0-9 _\\-]{2,16}"} title="2–16 letters, numbers, spaces, underscores or hyphens" placeholder="Player name" autoComplete="nickname" required disabled={status === "sending"} />
+        <p className="submission-message">Keep it friendly. Your name is remembered here for future runs.</p>
       </> : <p className="submission-message">Playing as <strong>{nickname}</strong> · <button type="button" className="text-link" disabled={status === "sending"} onClick={() => setEditingName(true)}>Change name</button></p>}
       {done ? <p className="submission-message" role="status">{message || "Your result has been posted."}</p> : session === "offline" ? <p className="submission-message" role="status">This run couldn’t connect to the leaderboard. Your local record is saved.</p> : <>
         {status !== "sending" ? <button className="menu-btn primary" type="submit" disabled={session !== "ready"}>{session === "pending" ? "Connecting…" : status === "error" ? "Try again" : run.mode === "sprint" ? "Post time" : "Post score"}</button> : null}
