@@ -1,3 +1,4 @@
+import { nicknameError } from "./src/lib/game/nickname.ts";
 // Supabase Edge Function: tris-leaderboard. All database credentials stay on the server.
 const url = Deno.env.get('SUPABASE_URL')!;
 const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -29,7 +30,7 @@ Deno.serve(async req => {
       if (mode !== 'endless' && mode !== 'sprint') return response({ error: 'Invalid mode.' }, 400);
       const order = mode === 'endless' ? 'score.desc' : 'time_ms.asc';
       const entries = await database(`tris_scores?mode=eq.${mode}&select=id,nickname,score,lines,level,time_ms&order=${order},created_at.asc,id.asc&limit=10`);
-      return response({ entries });
+      return response({ entries: entries.map((entry: { nickname: string }) => ({ ...entry, nickname: nicknameError(entry.nickname) ? "Player" : entry.nickname })) });
     }
     if (req.method !== 'POST') return response({ error: 'Method not allowed.' }, 405);
     if (Number(req.headers.get('content-length') || 0) > 2048) return response({ error: 'Request too large.' }, 413);
@@ -46,6 +47,8 @@ Deno.serve(async req => {
     }
     if (data.action !== 'submit') return response({ error: 'Invalid action.' }, 400);
     if (typeof data.nickname !== 'string' || !/^[A-Za-z0-9 _-]{2,16}$/.test(data.nickname.trim()) || typeof data.completed !== 'boolean' || !['score','lines','level','timeMs','pieces'].every(k => Number.isSafeInteger(data[k]))) return response({ error: 'Invalid result or player name.' }, 400);
+    const nameError = nicknameError(data.nickname);
+    if (nameError) return response({ error: nameError }, 400);
     return response(await database('rpc/tris_submit_score', { p_id: data.runId, p_player: player, p_name: data.nickname.trim(), p_score: data.score, p_lines: data.lines, p_level: data.level, p_time: data.timeMs, p_pieces: data.pieces, p_completed: data.completed }));
   } catch (error) {
     const message = error instanceof SyntaxError ? 'Invalid request.' : error instanceof Error ? error.message : 'Leaderboard unavailable. Please try again.';

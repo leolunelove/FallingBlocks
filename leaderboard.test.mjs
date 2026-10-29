@@ -5,9 +5,12 @@ let handler;
 let calls = [];
 let fail = false;
 const source = ts.transpileModule(readFileSync('leaderboard-edge.ts','utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-new Function('Deno','fetch', source)(
+const policy = {};
+new Function('exports', ts.transpileModule(readFileSync('src/lib/game/nickname.ts','utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText)(policy);
+new Function('Deno','fetch','require','exports', source)(
   { env: { get: key => ({ SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_ROLE_KEY: 'test-server-secret', SUPABASE_PUBLISHABLE_KEYS: '{"default":"test-public-key"}' })[key] }, serve: fn => { handler = fn; } },
-  async (url, opts) => { calls.push({url, ...opts}); return new Response(JSON.stringify(fail ? {code:'P0001', message:'Too many starts. Wait a minute and try again.'} : url.includes('tris_scores?') ? [] : {ok:true}), { status: fail ? 400 : 200 }); }
+  async (url, opts) => { calls.push({url, ...opts}); return new Response(JSON.stringify(fail ? {code:'P0001', message:'Too many starts. Wait a minute and try again.'} : url.includes('tris_scores?') ? [] : {ok:true}), { status: fail ? 400 : 200 }); },
+  () => policy, {}
 );
 const publicKey = readFileSync('src/lib/game/leaderboard-config.ts','utf8').match(/LEADERBOARD_KEY = "([^"]+)"/)[1];
 const headers = { apikey: publicKey, 'content-type':'application/json' };
@@ -38,3 +41,11 @@ assert.equal(JSON.parse(calls.at(-1).body).p_name,'Player 1');
 fail=true;
 assert.equal((await send(run)).status,429);
 console.log('Passed: leaderboard API authentication, mode sorting, top-10 limit, private field protection, input validation and rate-limit errors.');
+
+for (const nickname of ['fuck', 'F_U_C_K', 'f4gg0t', 'sh1t', 'Nazi123', 'biiiitch', 'sex', '---']) {
+  const before = calls.length;
+  assert.equal((await send({...submission,nickname})).status,400,nickname);
+  assert.equal(calls.length,before,'Rejected names must not reach the database');
+}
+for (const nickname of ['Leo', 'Cassie', 'Scunthorpe', 'Classic', 'Titus', 'Player 1']) assert.equal(policy.nicknameError(nickname),null,nickname);
+console.log('Passed: name moderation, separator/leet/repeated-letter evasions and innocent-name regressions.');
