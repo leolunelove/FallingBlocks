@@ -1230,3 +1230,17 @@ kbd { font: 9px var(--font-mono); color: #c3c3ce; min-width: 44px; }
 @keyframes title-intro-out { 0%, 68% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 .motion-reduced .title-intro { display: none; }
 @media (prefers-reduced-motion: reduce) { .title-intro { display: none; } }
+
+/* Put replay ahead of optional score posting, including short desktop windows. */
+.end-run-stats + .end-run-primary { margin-top: 20px; }
+.end-run-secondary + .submit-score { margin-top: 12px; padding-bottom: 0; border-top: 1px solid #ffffff12; }
+@media (max-height: 760px) {
+  .end-run-card { padding: 24px 30px; }
+  .end-run-header, .end-run-hero { margin-bottom: 16px; }
+  .end-run-value { font-size: 48px; margin-bottom: 8px; }
+  .end-run-stats { padding: 12px 0; }
+  .end-run-stats + .end-run-primary { margin-top: 16px; }
+  .end-run-secondary { margin-top: 8px; }
+  .end-run-card .submit-score { padding-top: 14px; }
+}
+@media (max-width: 480px) and (max-height: 760px) { .end-run-card { padding: 22px; } }
