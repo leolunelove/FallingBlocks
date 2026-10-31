@@ -128,12 +128,12 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
             <div><dt>{completed ? "Score" : "Level"}</dt><dd>{completed ? score.toLocaleString("en-US") : level}</dd></div>
             <div><dt>{completed ? "Pieces" : "Time"}</dt><dd>{completed ? pieces : formatTime(timeMs)}</dd></div>
           </dl>
-          <SubmitScore />
           <button type="button" className="end-run-primary" onClick={() => ctrl?.restart()}>Play again <kbd>R</kbd></button>
           <div className="end-run-secondary">
             <button type="button" onClick={() => useTris.getState().setOverlay("results")}>Run details</button>
             <button type="button" onClick={() => ctrl?.quit()}>Change mode</button>
           </div>
+          <SubmitScore />
         </EndRunFrame>
       ) : null}
 
@@ -172,7 +172,12 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
               <tr>
                 <th>Pieces</th>
                 <td>{pieces}</td>
-                <td>{timeMs > 0 ? `${(pieces / (timeMs / 1000)).toFixed(2)} /s` : "—"}</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <th>Pace</th>
+                <td>{timeMs > 0 ? `${(pieces / (timeMs / 1000)).toFixed(2)} pcs/s` : "—"}</td>
+                <td>—</td>
               </tr>
               <tr>
                 <th>Best at</th>
@@ -217,6 +222,7 @@ export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Con
 });
 
 const UPDATE_LOG = [
+  { date: "2026-10-31", label: "October 31, 2026", title: "An easier next run", changes: ["Play again, Run details, and Change mode now sit above score posting, so replay is easier to reach in shorter windows.", "Run details give pace its own labelled row, measured in pieces per second."] },
   { date: "2026-10-29", label: "October 29, 2026", title: "A quick hello", changes: ["A brief logo and title reveal flows into the menu in under a second while the game loads underneath.", "Any tap or key skips the intro. Reduced-motion preferences skip it automatically.", "Leaderboard names now filter common offensive words and disguised spellings, with checks on the server too."] },
   { date: "2026-10-28", label: "October 28, 2026", title: "Clearer controls, quieter scores", changes: ["Touch controls now separate movement from rotation, with clearer labels and a distinct Drop button.", "Line-clear points appear beside the cleared rows instead of across the middle of the board, on desktop and mobile.", "Touch releases are handled more reliably, including interrupted presses. Desktop keyboard controls and handling stay the same."] },
   { date: "2026-10-22", label: "October 22, 2026", title: "A cleaner clear", changes: ["Completed lines now fade away smoothly in their own colours, without a white flash or extra screen shake.", "The quick line-clear timing, controls, and reduced-motion support stay the same."] },
