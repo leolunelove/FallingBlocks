@@ -3,7 +3,7 @@ import { EMPTY_RECORDS, loadHistory, loadRecords } from "./records";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "./settings";
 import type { GameMode, Overlay, Phase, PieceId, Records, RunRecord, Settings } from "./types";
 
-export type SettingsTab = "controls" | "video" | "audio" | "game";
+export type SettingsTab = "general" | "controls" | "video" | "audio" | "game";
 
 export type HudState = {
   lastRun: RunRecord | null;
@@ -82,7 +82,7 @@ export const useTris = create<HudState & Actions>((set, get) => ({
   deathReason: null,
   settings: bootSettings,
   rebinding: null,
-  settingsTab: "controls",
+  settingsTab: "general",
   patch: (p) => set(p),
   setSettings: (s, persist = true) => {
     set({ settings: s });

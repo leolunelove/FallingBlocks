@@ -4,7 +4,7 @@ const url = Deno.env.get('SUPABASE_URL')!;
 const secret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Public identifier for this app only; it grants no direct database access.
 const applicationKey = 'tris_public_e5f14027bda1f1cff122566fe7a6c6b9334119efa3f3fe33';
-const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'apikey, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'apikey, content-type, x-player-token', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers });
 async function hash(value: string) {
   const data = new TextEncoder().encode(`${secret}:${value}`);
@@ -29,8 +29,10 @@ Deno.serve(async req => {
       const mode = new URL(req.url).searchParams.get('mode');
       if (mode !== 'endless' && mode !== 'sprint') return response({ error: 'Invalid mode.' }, 400);
       const order = mode === 'endless' ? 'score.desc' : 'time_ms.asc';
-      const entries = await database(`tris_scores?mode=eq.${mode}&select=id,nickname,score,lines,level,time_ms&order=${order},created_at.asc,id.asc&limit=10`);
-      return response({ entries: entries.map((entry: { nickname: string }) => ({ ...entry, nickname: nicknameError(entry.nickname) ? "Player" : entry.nickname })) });
+      const entries = await database(`tris_scores?mode=eq.${mode}&select=id,nickname,score,lines,level,time_ms,player_hash&order=${order},created_at.asc,id.asc&limit=10`);
+      const token = req.headers.get('x-player-token') || '';
+      const identity = /^[a-f0-9]{64}$/.test(token) ? await hash(token) : null;
+      return response({ entries: entries.map((entry: { id: string; nickname: string; score: number; lines: number; level: number; time_ms: number; player_hash: string }) => ({ id: entry.id, nickname: nicknameError(entry.nickname) ? "Player" : entry.nickname, score: entry.score, lines: entry.lines, level: entry.level, time_ms: entry.time_ms, isPlayer: identity !== null && entry.player_hash === identity })) });
     }
     if (req.method !== 'POST') return response({ error: 'Method not allowed.' }, 405);
     if (Number(req.headers.get('content-length') || 0) > 2048) return response({ error: 'Request too large.' }, 413);

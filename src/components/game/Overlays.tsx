@@ -16,14 +16,14 @@ function OverlayFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function EndRunFrame({ children }: { children: React.ReactNode }) {
+function EndRunFrame({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     panel.current?.focus();
     return () => { if (previous?.isConnected) previous.focus(); };
   }, []);
-  return createPortal(<div className="end-run-backdrop">
+  return createPortal(<div className={`end-run-backdrop ${className}`}>
     <div className="end-run-card" role="dialog" aria-modal="true" aria-labelledby="end-run-title" tabIndex={-1} ref={panel} onKeyDown={e => {
       if (e.key !== "Tab") return;
       const controls = panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)');
@@ -81,35 +81,27 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
             <h2 className="opening-title">FallingBlocks<span>.</span></h2>
           </div>
           <p className="opening-description">{mode === "sprint" ? "Clear 40 lines against the clock." : "Stack blocks. Clear full lines."}</p>
+          <button type="button" className="start-cta" disabled={!ctrl || phase !== "ready"} onClick={(e) => { ctrl?.start(); e.currentTarget.blur(); }}>
+            Play <span aria-hidden="true">↗</span>
+          </button>
           <div className="mode-picker" aria-label="Game mode">
             {(["endless", "sprint"] as const).map((m) => <button key={m} type="button" aria-pressed={mode === m} onClick={() => useTris.getState().patch({ mode: m, records: loadRecords(m) })}>{m === "endless" ? "Endless" : "40-line sprint"}</button>)}
           </div>
           <p className="ready-record">{mode === "sprint" ? records.sprintBestMs ? `BEST ${formatSprintTime(records.sprintBestMs)}` : "\u00a0" : records.highScore ? `BEST ${formatScore(records.highScore)}` : "\u00a0"}</p>
-          <button type="button" className="start-cta" disabled={!ctrl || phase !== "ready"} onClick={(e) => { ctrl?.start(); e.currentTarget.blur(); }}>
-            Play <span aria-hidden="true">↗</span>
-          </button>
           <p className="start-shortcut">Press <kbd>Space</kbd> to play</p>
         </div>
       ) : null}
 
       {phase === "paused" && overlay === null ? (
-        <OverlayFrame>
-          <p className="kicker">Paused</p>
-          <div className="menu-stack">
-            <button type="button" className="menu-btn primary" onClick={() => ctrl?.resume()}>
-              Resume
-            </button>
-            <button type="button" className="menu-btn" onClick={() => ctrl?.restart()}>
-              Restart
-            </button>
-            <button type="button" className="menu-btn" onClick={() => useTris.getState().setOverlay("settings")}>
-              Settings
-            </button>
-            <button type="button" className="menu-btn" onClick={() => ctrl?.quit()}>
-              Quit
-            </button>
+        <EndRunFrame className="pause-dialog">
+          <header className="end-run-header"><p className="end-run-mode">Take a moment</p><h2 id="end-run-title">Paused<span>.</span></h2></header>
+          <button type="button" className="end-run-primary" onClick={() => ctrl?.resume()}>Resume <kbd>Esc</kbd></button>
+          <div className="pause-options">
+            <button type="button" onClick={() => ctrl?.restart()}>Restart run</button>
+            <button type="button" onClick={() => useTris.getState().setOverlay("settings")}>Settings</button>
+            <button type="button" onClick={() => ctrl?.quit()}>Back to menu</button>
           </div>
-        </OverlayFrame>
+        </EndRunFrame>
       ) : null}
 
       {phase === "over" && overlay === null ? (
@@ -214,6 +206,7 @@ export const PlayOverlays = memo(function PlayOverlays({ ctrl }: { ctrl: Control
 
 export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Controller | null }) {
   const overlay = useTris((s) => s.overlay);
+  if (overlay === "menu") return <MenuOverlay />;
   if (overlay === "leaderboard") return <Leaderboard />;
   if (overlay === "updates") return <UpdatesOverlay />;
   if (overlay === "help") return <HelpOverlay />;
@@ -222,6 +215,7 @@ export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Con
 });
 
 const UPDATE_LOG = [
+  { date: "2026-11-23", label: "November 23, 2026", title: "Less in the way", changes: ["A quieter Play-first opening and compact menu, with a single header row on phones.", "Refreshed Pause and Help screens, with instructions suited to touch or keyboard.", "Settings now opens on Basics; existing key bindings and timing are in Advanced.", "The leaderboard marks your own row and test names have been relabelled as Player, with their scores preserved."] },
   { date: "2026-10-31", label: "October 31, 2026", title: "An easier next run", changes: ["Play again, Run details, and Change mode now sit above score posting, so replay is easier to reach in shorter windows.", "Run details give pace its own labelled row, measured in pieces per second."] },
   { date: "2026-10-29", label: "October 29, 2026", title: "A quick hello", changes: ["A brief logo and title reveal flows into the menu in under a second while the game loads underneath.", "Any tap or key skips the intro. Reduced-motion preferences skip it automatically.", "Leaderboard names now filter common offensive words and disguised spellings, with checks on the server too."] },
   { date: "2026-10-28", label: "October 28, 2026", title: "Clearer controls, quieter scores", changes: ["Touch controls now separate movement from rotation, with clearer labels and a distinct Drop button.", "Line-clear points appear beside the cleared rows instead of across the middle of the board, on desktop and mobile.", "Touch releases are handled more reliably, including interrupted presses. Desktop keyboard controls and handling stay the same."] },
@@ -243,53 +237,31 @@ function UpdatesOverlay() {
   </EndRunFrame>;
 }
 
-function HelpOverlay() {
-  return (
-    <div className="overlay overlay-dim overlay-chrome">
-      <div className="overlay-panel">
-        <p className="kicker">How to play</p>
-        <p className="help-lead">Place blocks. Clear lines. Don’t die.</p>
-        <p className="help-copy">Endless: survive as gravity rises. Sprint: clear 40 lines at a steady speed, as fast as you can. Bests are saved on this device.</p>
-        <dl className="help-keys">
-          <div>
-            <dt>Move</dt>
-            <dd>← →</dd>
-          </div>
-          <div>
-            <dt>Soft drop</dt>
-            <dd>↓</dd>
-          </div>
-          <div>
-            <dt>Hard drop</dt>
-            <dd>SPACE</dd>
-          </div>
-          <div>
-            <dt>Rotate</dt>
-            <dd>Z / X / Q</dd>
-          </div>
-          <div>
-            <dt>Also</dt>
-            <dd>WASD · pad</dd>
-          </div>
-          <div>
-            <dt>Hold</dt>
-            <dd>C</dd>
-          </div>
-          <div>
-            <dt>Restart</dt>
-            <dd>R</dd>
-          </div>
-          <div>
-            <dt>Pause</dt>
-            <dd>ESC</dd>
-          </div>
-        </dl>
-        <button type="button" className="menu-btn primary" onClick={() => useTris.getState().setOverlay(null)}>
-          Close
-        </button>
-      </div>
+function MenuOverlay() {
+  return <EndRunFrame className="navigation-dialog">
+    <header className="end-run-header"><p className="end-run-mode">FallingBlocks</p><h2 id="end-run-title">Menu<span>.</span></h2></header>
+    <div className="navigation-options">
+      <button type="button" onClick={() => useTris.getState().setOverlay("help")}>How to play <span aria-hidden="true">↗</span></button>
+      <button type="button" onClick={() => useTris.getState().setOverlay("settings")}>Settings <span aria-hidden="true">↗</span></button>
+      <button type="button" onClick={() => useTris.getState().setOverlay("updates")}>Updates <span aria-hidden="true">↗</span></button>
     </div>
-  );
+    <button type="button" className="menu-close" onClick={() => useTris.getState().setOverlay(null)}>Close menu</button>
+  </EndRunFrame>;
+}
+function HelpOverlay() {
+  return <EndRunFrame className="help-dialog">
+    <header className="end-run-header"><p className="end-run-mode">How to play</p><h2 id="end-run-title">Make room<span>.</span></h2></header>
+    <p className="help-copy">Fit the blocks together. Fill a horizontal row to clear it. Keep the stack below the top.</p>
+    <div className="help-modes"><p><strong>Endless</strong>Survive as the blocks fall faster.</p><p><strong>40-line sprint</strong>Clear 40 lines as quickly as you can.</p></div>
+    <p className="touch-help">Use Left and Right to move, the curved arrows to rotate, and Drop to place a piece instantly. Hold saves a piece for later.</p>
+    <dl className="help-keys keyboard-help">
+      <div><dt>Move</dt><dd>← → / A D</dd></div><div><dt>Rotate</dt><dd>Z / X / ↑</dd></div>
+      <div><dt>Drop instantly</dt><dd>Space</dd></div><div><dt>Soft drop</dt><dd>↓ / S</dd></div>
+      <div><dt>Hold</dt><dd>C / Shift</dd></div><div><dt>Pause</dt><dd>Esc</dd></div>
+    </dl>
+    <p className="help-copy help-small">Personal bests stay on this device. The Top 10 is shared with everyone.</p>
+    <button type="button" className="end-run-primary" onClick={() => useTris.getState().setOverlay(null)}>Got it <span aria-hidden="true">↗</span></button>
+  </EndRunFrame>;
 }
 
 const ACTIONS: Action[] = ["left", "right", "soft", "hard", "rotCCW", "rotCW", "rot180", "hold", "restart", "pause"];
@@ -298,6 +270,14 @@ function SettingsOverlay({ ctrl }: { ctrl: Controller | null }) {
   const settings = useTris((s) => s.settings);
   const rebinding = useTris((s) => s.rebinding);
   const tab = useTris((s) => s.settingsTab);
+  useEffect(() => { useTris.getState().patch({ settingsTab: "general" }); }, []);
+
+  const settingsPanel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const frame = requestAnimationFrame(() => settingsPanel.current?.focus());
+    return () => { cancelAnimationFrame(frame); if (previous?.isConnected) previous.focus(); };
+  }, []);
 
   const set = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
@@ -307,7 +287,14 @@ function SettingsOverlay({ ctrl }: { ctrl: Controller | null }) {
 
   return (
     <div className="overlay overlay-dim overlay-settings">
-      <div className="settings-panel" role="dialog" aria-label="Settings">
+      <div className="settings-panel" role="dialog" aria-modal="true" aria-label="Settings" ref={settingsPanel} tabIndex={-1} onKeyDown={e => {
+        if (e.key !== "Tab") return;
+        const controls = settingsPanel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)');
+        if (!controls?.length) return;
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === settingsPanel.current)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || document.activeElement === settingsPanel.current)) { e.preventDefault(); first.focus(); }
+      }}>
         <header className="settings-head">
           <p className="kicker">Settings</p>
           <button type="button" className="text-link" onClick={() => useTris.getState().setOverlay(null)}>
@@ -315,7 +302,7 @@ function SettingsOverlay({ ctrl }: { ctrl: Controller | null }) {
           </button>
         </header>
         <div className="settings-tabs" role="tablist">
-          {(["controls", "video", "audio", "game"] as const).map((t) => (
+          {(["general", "video", "audio", "game", "controls"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -324,7 +311,7 @@ function SettingsOverlay({ ctrl }: { ctrl: Controller | null }) {
               className={tab === t ? "tab on" : "tab"}
               onClick={() => useTris.getState().patch({ settingsTab: t as SettingsTab })}
             >
-              {t}
+              {{ general: "Basics", video: "Look", audio: "Sound", game: "Game", controls: "Advanced" }[t]}
             </button>
           ))}
         </div>
@@ -375,6 +362,14 @@ function SettingsBody({
   rebinding: Action | null;
   ctrl: Controller | null;
 }) {
+  if (tab === "general") return <div className="settings-body">
+    <p className="settings-intro">Make yourself comfortable.</p>
+    <Slider label="Volume" min={0} max={100} step={1} value={Math.round(settings.master * 100)} suffix="%" onChange={v => set({master: v / 100})} />
+    <Toggle label="Reduced motion" on={settings.reducedMotion} onChange={v => set({reducedMotion:v})} />
+    <Toggle label="High-contrast pieces" on={settings.palette === "contrast"} onChange={v => set({palette:v ? "contrast" : "standard"})} />
+    <Toggle label="Grid" on={settings.gridVisible} onChange={v => set({gridVisible:v})} />
+    <p className="settings-intro">Look and Sound have more options. Your existing key bindings and timing are in Advanced.</p>
+  </div>;
   if (tab === "controls") {
     return (
       <div className="settings-body">

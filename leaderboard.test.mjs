@@ -9,7 +9,7 @@ const policy = {};
 new Function('exports', ts.transpileModule(readFileSync('src/lib/game/nickname.ts','utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText)(policy);
 new Function('Deno','fetch','require','exports', source)(
   { env: { get: key => ({ SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_ROLE_KEY: 'test-server-secret', SUPABASE_PUBLISHABLE_KEYS: '{"default":"test-public-key"}' })[key] }, serve: fn => { handler = fn; } },
-  async (url, opts) => { calls.push({url, ...opts}); return new Response(JSON.stringify(fail ? {code:'P0001', message:'Too many starts. Wait a minute and try again.'} : url.includes('tris_scores?') ? [] : {ok:true}), { status: fail ? 400 : 200 }); },
+  async (url, opts) => { calls.push({url, ...opts}); return new Response(JSON.stringify(fail ? {code:'P0001', message:'Too many starts. Wait a minute and try again.'} : url.includes('tris_scores?') ? [{id:'test', nickname:'Leo', score:100, lines:0, level:1, time_ms:1000, player_hash:await (async () => { const data = new TextEncoder().encode('test-server-secret:'+'a'.repeat(64)); return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',data)),b=>b.toString(16).padStart(2,'0')).join(''); })()}] : {ok:true}), { status: fail ? 400 : 200 }); },
   () => policy, {}
 );
 const publicKey = readFileSync('src/lib/game/leaderboard-config.ts','utf8').match(/LEADERBOARD_KEY = "([^"]+)"/)[1];
@@ -25,7 +25,9 @@ for (const mode of ['endless','sprint']) {
   const url = new URL(calls.at(-1).url);
   assert.equal(url.searchParams.get('limit'),'10');
   assert.equal(url.searchParams.get('order'),`${mode === 'endless' ? 'score.desc' : 'time_ms.asc'},created_at.asc,id.asc`);
-  assert.equal(url.searchParams.get('select').includes('player_hash'),false);
+  const publicData = await response.json();
+  assert.equal('player_hash' in publicData.entries[0],false);
+  assert.equal(publicData.entries[0].isPlayer,false);
 }
 assert.equal((await send(run)).status,200);
 const start = JSON.parse(calls.at(-1).body);
@@ -49,3 +51,13 @@ for (const nickname of ['fuck', 'F_U_C_K', 'f4gg0t', 'sh1t', 'Nazi123', 'biiiitc
 }
 for (const nickname of ['Leo', 'Cassie', 'Scunthorpe', 'Classic', 'Titus', 'Player 1']) assert.equal(policy.nicknameError(nickname),null,nickname);
 console.log('Passed: name moderation, separator/leet/repeated-letter evasions and innocent-name regressions.');
+
+fail=false;
+const own = await handler(new Request('https://example.test?mode=endless',{headers:{...headers,'x-player-token':'a'.repeat(64)}}));
+// Restore the stub after rate-limit test.
+const ownData=await own.json();
+assert.equal(ownData.entries[0].isPlayer,true);
+assert.equal('player_hash' in ownData.entries[0],false);
+const stranger=await handler(new Request('https://example.test?mode=endless',{headers:{...headers,'x-player-token':'b'.repeat(64)}}));
+assert.equal((await stranger.json()).entries[0].isPlayer,false);
+console.log('Passed: private player highlighting without exposing stored identities.');

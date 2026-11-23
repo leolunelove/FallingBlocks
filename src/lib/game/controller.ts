@@ -293,7 +293,7 @@ export function createController(opts: {
       return;
     }
 
-    if (overlay === "help" || overlay === "settings" || overlay === "leaderboard" || overlay === "updates") {
+    if (overlay === "menu" || overlay === "help" || overlay === "settings" || overlay === "leaderboard" || overlay === "updates") {
       if (action === "pause" || e.code === "Escape") {
         e.preventDefault();
         useTris.getState().setOverlay(null);

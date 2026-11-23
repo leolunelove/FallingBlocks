@@ -39,7 +39,7 @@ export function TrisApp() {
   const nextShown = settings.showNext ? next.slice(0, settings.nextCount) : [];
 
   return (
-    <div className={`tris-root${settings.reducedMotion ? " motion-reduced" : ""}`}>
+    <div className={`tris-root${phase === "ready" ? " is-ready" : ""}${settings.reducedMotion ? " motion-reduced" : ""}`}>
       <PrefersReducedSync />
       <TitleIntro />
       <div className="bezel" />
@@ -51,13 +51,7 @@ export function TrisApp() {
         <nav className="top-nav" aria-label="Game controls">
           {phase === "playing" || phase === "paused" ? <button type="button" className="text-link pause-link" onClick={() => phase === "playing" ? ctrl?.pause() : ctrl?.resume()}>{phase === "playing" ? "Pause" : "Resume"}</button> : null}
           <button type="button" className="text-link leaderboard-link" onClick={() => useTris.getState().setOverlay("leaderboard")}>Top 10</button>
-          <button type="button" className="text-link updates-link" onClick={() => useTris.getState().setOverlay("updates")}>Updates</button>
-          <button type="button" className="text-link" onClick={() => useTris.getState().setOverlay(overlay === "help" ? null : "help")}>
-            How to play
-          </button>
-          <button type="button" className="text-link" onClick={() => useTris.getState().setOverlay(overlay === "settings" ? null : "settings")}>
-            Settings
-          </button>
+          <button type="button" className="nav-menu-button" aria-label="Open menu" aria-haspopup="dialog" onClick={() => { if (phase === "playing") ctrl?.pause(); useTris.getState().setOverlay("menu"); }}><span aria-hidden="true">☰</span></button>
         </nav>
       </header>
 

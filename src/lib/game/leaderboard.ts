@@ -2,7 +2,7 @@ import { nicknameError } from "./nickname";
 import { LEADERBOARD_URL, LEADERBOARD_KEY } from "./leaderboard-config";
 import type { GameMode, RunRecord } from "./types";
 
-export type LeaderboardEntry = { id: string; nickname: string; score: number; lines: number; level: number; time_ms: number };
+export type LeaderboardEntry = { id: string; nickname: string; score: number; lines: number; level: number; time_ms: number; isPlayer?: boolean };
 export function newRunId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -38,7 +38,7 @@ async function request<T>(path: string, body?: unknown, signal?: AbortSignal): P
   if (!LEADERBOARD_URL) throw new Error("Leaderboard is not connected yet.");
   const response = await fetch(`${LEADERBOARD_URL}${path}`, {
     method: body ? "POST" : "GET", cache: "no-store",
-    headers: { apikey: LEADERBOARD_KEY, "Content-Type": "application/json" },
+    headers: { "x-player-token": playerToken(), apikey: LEADERBOARD_KEY, "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
     signal: signal ?? AbortSignal.timeout(12000),
   });

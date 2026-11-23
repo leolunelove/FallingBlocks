@@ -57,6 +57,14 @@ try {
   assert.equal(ctrl.engine.timeMs, pausedTime);
   ctrl.applySettings({ ...useTris.getState().settings, gridVisible: false }); advance();
   assert.ok(paints > pausedPaints, 'Settings must redraw even while paused');
+  useTris.getState().setOverlay('menu');
+  const press = code => windowEvents.get('keydown')({code, target:null, preventDefault(){}});
+  press('KeyR');
+  assert.equal(ctrl.engine.phase,'paused','Menu must block restart shortcuts');
+  assert.equal(useTris.getState().overlay,'menu');
+  press('Escape');
+  assert.equal(useTris.getState().overlay,null,'Escape closes the menu');
+  assert.equal(ctrl.engine.phase,'paused','Closing menu must not resume the game');
   ctrl.resume(); advance();
   const hiddenTime = ctrl.engine.timeMs;
   document.hidden = true; documentEvents.get('visibilitychange')();
