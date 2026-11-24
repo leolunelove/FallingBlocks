@@ -1310,3 +1310,5 @@ kbd { font: 9px var(--font-mono); color: #c3c3ce; min-width: 44px; }
 
 .settings-tabs .tab { min-height:44px; }
 @media (max-width:640px) { .nav-menu-button { width:44px; } }
+
+@media (max-width:640px), (pointer:coarse) { .end-run-card kbd { display:none; } }

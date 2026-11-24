@@ -86,7 +86,7 @@ export function TrisApp() {
 
         <div className="well-wrap" ref={stageRef}>
           <div className="well">
-            <canvas ref={canvasRef} className="playfield" aria-label="FallingBlocks game board. Use arrow keys to move, Z and X to rotate, and Space to drop." />
+            <canvas ref={canvasRef} className="playfield" tabIndex={-1} aria-label="FallingBlocks game board. Use arrow keys to move, Z and X to rotate, and Space to drop." />
             {mode === "sprint" && phase !== "ready" ? <div className="sprint-progress" role="progressbar" aria-label="Sprint lines cleared" aria-valuenow={Math.min(lines, 40)} aria-valuemin={0} aria-valuemax={40}><span style={{ width: `${Math.min(lines / 40, 1) * 100}%` }} /></div> : null}
             <PlayOverlays ctrl={ctrl} />
           </div>

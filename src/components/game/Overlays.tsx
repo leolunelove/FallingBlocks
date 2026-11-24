@@ -16,12 +16,19 @@ function OverlayFrame({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Returning to play must give Space back to the board, not the menu trigger.
+function restoreOverlayFocus(previous: HTMLElement | null) {
+  if (useTris.getState().phase === "playing") {
+    document.querySelector<HTMLCanvasElement>("canvas.playfield")?.focus({ preventScroll: true });
+  } else if (previous?.isConnected) previous.focus({ preventScroll: true });
+}
+
 function EndRunFrame({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     panel.current?.focus();
-    return () => { if (previous?.isConnected) previous.focus(); };
+    return () => restoreOverlayFocus(previous);
   }, []);
   return createPortal(<div className={`end-run-backdrop ${className}`}>
     <div className="end-run-card" role="dialog" aria-modal="true" aria-labelledby="end-run-title" tabIndex={-1} ref={panel} onKeyDown={e => {
@@ -215,6 +222,7 @@ export const ChromeOverlays = memo(function ChromeOverlays({ ctrl }: { ctrl: Con
 });
 
 const UPDATE_LOG = [
+  { date: "2026-11-24", label: "November 24, 2026", title: "Straight back to play", changes: ["Resuming or replaying a run returns keyboard focus to the board, so Space drops a piece instead of reopening the menu.", "Keyboard shortcut badges stay hidden on phone and touch layouts."] },
   { date: "2026-11-23", label: "November 23, 2026", title: "Less in the way", changes: ["A quieter Play-first opening and compact menu, with a single header row on phones.", "Refreshed Pause and Help screens, with instructions suited to touch or keyboard.", "Settings now opens on Basics; existing key bindings and timing are in Advanced.", "The leaderboard marks your own row and test names have been relabelled as Player, with their scores preserved."] },
   { date: "2026-10-31", label: "October 31, 2026", title: "An easier next run", changes: ["Play again, Run details, and Change mode now sit above score posting, so replay is easier to reach in shorter windows.", "Run details give pace its own labelled row, measured in pieces per second."] },
   { date: "2026-10-29", label: "October 29, 2026", title: "A quick hello", changes: ["A brief logo and title reveal flows into the menu in under a second while the game loads underneath.", "Any tap or key skips the intro. Reduced-motion preferences skip it automatically.", "Leaderboard names now filter common offensive words and disguised spellings, with checks on the server too."] },
@@ -276,7 +284,7 @@ function SettingsOverlay({ ctrl }: { ctrl: Controller | null }) {
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const frame = requestAnimationFrame(() => settingsPanel.current?.focus());
-    return () => { cancelAnimationFrame(frame); if (previous?.isConnected) previous.focus(); };
+    return () => { cancelAnimationFrame(frame); restoreOverlayFocus(previous); };
   }, []);
 
   const set = (patch: Partial<Settings>) => {
